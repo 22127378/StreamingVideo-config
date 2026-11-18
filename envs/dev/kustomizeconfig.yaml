@@ -1,0 +1,25 @@
+# Kustomize thêm hash vào tên ConfigMap/Secret sinh ra (streamforge-config-<hash>) và tự sửa tên ở
+# Deployment, Job, ... nhưng không biết đường dẫn bên trong KEDA ScaledJob và Argo Rollouts Rollout.
+# Thiếu cấu hình này thì chúng trỏ tới "streamforge-config" (không có hash): KEDA không tạo được Job,
+# pod của Rollout không khởi động được.
+nameReference:
+  - kind: ConfigMap
+    fieldSpecs:
+      - kind: Rollout
+        path: spec/template/spec/containers/envFrom/configMapRef/name
+      - kind: Rollout
+        path: spec/template/spec/containers/env/valueFrom/configMapKeyRef/name
+      - kind: ScaledJob
+        path: spec/jobTargetRef/template/spec/containers/envFrom/configMapRef/name
+      - kind: ScaledJob
+        path: spec/jobTargetRef/template/spec/containers/env/valueFrom/configMapKeyRef/name
+  - kind: Secret
+    fieldSpecs:
+      - kind: Rollout
+        path: spec/template/spec/containers/envFrom/secretRef/name
+      - kind: Rollout
+        path: spec/template/spec/containers/env/valueFrom/secretKeyRef/name
+      - kind: ScaledJob
+        path: spec/jobTargetRef/template/spec/containers/envFrom/secretRef/name
+      - kind: ScaledJob
+        path: spec/jobTargetRef/template/spec/containers/env/valueFrom/secretKeyRef/name

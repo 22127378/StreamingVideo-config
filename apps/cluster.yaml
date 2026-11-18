@@ -1,0 +1,23 @@
+# Tài nguyên cấp cụm từ repo code: NodePool (app on-demand, transcode Spot), PriorityClass của pool
+# transcode, IngressClass ALB, StorageClass. Wave -2: có node pool trước khi cài controller và app.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cluster
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/22127378/StreamingVideo.git
+    targetRevision: main
+    path: k8s/cluster
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

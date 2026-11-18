@@ -1,0 +1,37 @@
+# Ứng dụng StreamForge (môi trường dev) từ envs/dev của repo này.
+# Thứ tự trong một lần sync (annotation sync-wave trong envs/dev):
+#   -3 namespace, -2 ConfigMap và ServiceAccount của migration,
+#   -1 Job migration (hook Sync: chạy lại mỗi lần sync, phải xong thì mới sang bước sau),
+#    0 Rollout của các service HTTP, worker (ScaledJob), Service, Ingress.
+# Secret (JWT, private key CloudFront) không nằm trong Git: k8s/deploy.sh của repo code tạo trên cụm.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: streamforge
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/22127378/StreamingVideo-config.git
+    targetRevision: main
+    path: envs/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: streamforge
+  syncPolicy:
+    automated:
+      # Xoá tài nguyên đã bị bỏ khỏi Git, và sửa lại khi có người đổi tay trên cụm
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ApplyOutOfSyncOnly=true
+      # Xoá tài nguyên cũ sau cùng (ví dụ Deployment được thay bằng Rollout): pod mới chạy trước
+      - PruneLast=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m

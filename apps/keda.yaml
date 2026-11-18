@@ -1,0 +1,37 @@
+# KEDA: scale worker theo độ dài SQS (ScaledJob) và pod giữ chỗ theo lịch (ScaledObject cron).
+# Đọc SQS bằng Pod Identity (role "keda" ở terraform/layers/compute), không dùng IRSA.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keda
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://kedacore.github.io/charts
+    chart: keda
+    targetRevision: 2.20.2
+    helm:
+      valuesObject:
+        podIdentity:
+          aws:
+            irsa:
+              enabled: false
+        prometheus:
+          operator:
+            enabled: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: keda
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # CRD của KEDA vượt giới hạn 256KB của annotation last-applied khi apply phía client
+      - ServerSideApply=true
